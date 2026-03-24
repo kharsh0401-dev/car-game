@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hill Climb Pro Max</title>
+  <style>
+    body { margin:0; overflow:hidden; background:#0f172a; }
+    canvas { display:block; }
+    #shop {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: white;
+      padding: 10px;
+      display:none;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="shop">
+  <h3>Car Shop</h3>
+  <button onclick="buyCar(1)">Basic Car (Free)</button><br><br>
+  <button onclick="buyCar(2)">Super Car (50 coins)</button>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let gravity = 0.6;
+let speed = 3;
+let score = 0;
+let coins = 0;
+
+let level = 1;
+let phase = 1;
+
+let progress = 0;
+
+let carType = 1;
+
+let car = {
+  x: 150,
+  y: 300,
+  width: 60,
+  height: 30,
+  dy: 0,
+  jumpPower: -12
+};
+
+let coinArray = [];
+
+// Sound
+let jumpSound = new Audio("https://www.soundjay.com/button/sounds/button-16.mp3");
+
+// Coins
+function spawnCoin() {
+  coinArray.push({
+    x: canvas.width,
+    y: Math.random()*200 + 150,
+    r: 10
+  });
+}
+
+// Draw Car
+function drawCar() {
+  ctx.fillStyle = carType === 1 ? "#38bdf8" : "orange";
+  ctx.fillRect(car.x, car.y, car.width, car.height);
+}
+
+// Draw Coins
+function drawCoins() {
+  ctx.fillStyle = "gold";
+  coinArray.forEach(c => {
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.r, 0, Math.PI*2);
+    ctx.fill();
+  });
+}
+
+// Progress Bar
+function drawProgress() {
+  ctx.fillStyle = "white";
+  ctx.fillRect(20, 100, 200, 10);
+
+  ctx.fillStyle = "lime";
+  ctx.fillRect(20, 100, progress*2, 10);
+}
+
+// Update
+function update() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Gravity
+  car.dy += gravity;
+  car.y += car.dy;
+
+  if(car.y > canvas.height - 100){
+    car.y = canvas.height - 100;
+    car.dy = 0;
+  }
+
+  // Move coins
+  coinArray.forEach(c => c.x -= speed);
+
+  // Collect
+  coinArray.forEach((c,i) => {
+    if(Math.abs(car.x - c.x) < 40 && Math.abs(car.y - c.y) < 40){
+      coins++;
+      coinArray.splice(i,1);
+    }
+  });
+
+  score++;
+  progress += 0.5;
+
+  // Phase Complete
+  if(progress >= 100){
+    progress = 0;
+    level++;
+
+    if(level > 10){
+      level = 1;
+      phase++;
+      speed += 2;
+
+      alert("🚗 Phase " + phase + " Completed! New Rewards!");
+      document.getElementById("shop").style.display = "block";
+    }
+  }
+
+  drawCar();
+  drawCoins();
+  drawProgress();
+
+  ctx.fillStyle="white";
+  ctx.fillText("Score: "+score,20,30);
+  ctx.fillText("Coins: "+coins,20,50);
+  ctx.fillText("Level: "+level,20,70);
+  ctx.fillText("Phase: "+phase,20,90);
+
+  requestAnimationFrame(update);
+}
+
+// Jump
+document.addEventListener("keydown", e=>{
+  if(e.code==="Space"){
+    car.dy = car.jumpPower;
+    jumpSound.play();
+  }
+});
+
+// Buy Car
+function buyCar(type){
+  if(type===1){
+    carType=1;
+  }
+  else if(type===2 && coins>=50){
+    coins-=50;
+    carType=2;
+    car.jumpPower=-16;
+    speed+=1;
+  }
+}
+
+// Spawn
+setInterval(spawnCoin,1500);
+
+update();
+</script>
+
+</body>
+</html>
